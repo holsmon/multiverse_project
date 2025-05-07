@@ -1,0 +1,96 @@
+---
+title: "Multiverse_markdown"
+output: html_document
+date: "2025-05-7"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#load the tidyverse
+library(tidyverse)
+library(readxl)
+library(gitcreds)
+#adding proper libraries. 
+
+# load the multiverse package
+library(multiverse)
+
+multiverse_data <- read_excel("C:/Users/hols0/OneDrive/Desktop/Penn_State/Frank_Lab_Things/multiverse/mv_complete.xlsx")
+
+#if loaded 
+mv_complete = multiverse_data
+
+
+```
+
+
+```{r}
+
+#setup the variables
+
+
+```
+
+```{r}
+
+#define the multiverse object
+M <- multiverse()
+```
+
+
+```{multiverse default-m-1, inside = M}
+
+#setting up multiverse with covariates
+PSI_analysis <- glm(PSI ~ branch(formula,
+                   "GCS" ~ worst_GCS,
+                   "GCS_age" ~ worst_GCS + age,
+                   "GCS_age_race" ~ worst_GCS + age + race,
+                   "GOAT" ~ GOAT,
+                   "GOAT_age" ~ GOAT + age,
+                   "GOAT_age_race" ~ GOAT + age + race,
+                   "PTA" ~ PTA_reverse,
+                   "PTA_age" ~ PTA_reverse + age,
+                   "PTA_age_race" ~ PTA_reverse + age + race), data = multiverse_data)
+
+PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
+
+```
+
+```{r}
+
+#exectue multiverse
+execute_multiverse(M)
+
+summary = broom::tidy(PSI_analysis, conf.int = TRUE)
+
+extract_variable_from_universe(M, 8, PSI_analysis) |> 
+  broom::tidy()
+
+# visualize each analysis from fit in a histogram
+
+library(ggplot2)
+  
+  
+  expand(M) |>
+  mutate( 
+    find_results = map(.results, "PSI_result")
+  ) |>
+  select( find_results ) |>
+  gather( "analysis", "result" ) |>
+  unnest(result) |>
+  filter( term != "(Intercept)")|>
+  ggplot() +
+  geom_histogram(aes(x = p.value), bins = 50, fill = "#ffffff", color = "#333333") +
+  geom_vline( xintercept = 0.05, color = "red", linetype = "dashed") +
+  facet_wrap(~ analysis, scales = "free", nrow = 3) +
+  scale_y_continuous(
+    breaks = function(x) seq(0, ceiling(max(x)), by = 1),
+    limits = c(0, NA)  # Ensures y-axis starts at 0, upper limit auto-calculated
+  ) +
+  ggtitle("Multiverse results") +
+  theme_minimal()
+
+```
