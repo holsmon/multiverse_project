@@ -9,20 +9,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-#load the tidyverse
+#load the appropriate libraries
 library(tidyverse)
 library(readxl)
 library(gitcreds)
-#adding proper libraries. 
 
 # load the multiverse package
 library(multiverse)
 
-multiverse_data <- read_excel("C:/Users/hols0/OneDrive/Desktop/Penn_State/Frank_Lab_Things/multiverse/mv_complete.xlsx")
-
-#if loaded 
-mv_complete = multiverse_data
-
+#load in dataframe
+mv <- read_excel("multiverse_159_subjects.xlsx")
 
 ```
 
@@ -31,6 +27,24 @@ mv_complete = multiverse_data
 
 #setup the variables
 
+#Convert PSI composite index score to z score 
+mv$PSI_Z <- scale(mv$PSI, center = TRUE, scale = TRUE)
+
+#convert the PSI Digit Symbol Scaled score to z scores
+mv$PSIDigSymbScldScr_Z <- scale(mv$PSIDigSymbScld, center = TRUE, scale = TRUE)
+
+#convert the PSI Symbol Search Scaled score to z scores
+mv$PSISymbSrchScldScr_Z <- scale(mv$PSISymbSrchScld, center = TRUE, scale = TRUE)
+
+#Generate a curvilinear age variable for further analysis
+mv$Age_Squared <- mv$age^2
+
+#convert predictor variables (GCS, PTA, and GOAT) to z-scores
+mv$worst_GCS_Z <- scale(mv$worst_GCS, center = TRUE, scale = TRUE)
+
+mv$PTA_Reverse_Z <- scale(mv$PTA_reverse, center = TRUE, scale = TRUE)
+
+mv$GOAT_Z <- scale(mv$GOAT, center = TRUE, scale = TRUE)
 
 ```
 
