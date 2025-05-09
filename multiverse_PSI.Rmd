@@ -77,6 +77,8 @@ PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
 
 #execute multiverse
 
+execute_multiverse(M)
+
 summary = broom::tidy(PSI_analysis, conf.int = TRUE)
 
 #You cant test out a specific "universe". here, we can extract the 8th universe. Replace 8 with whichever university you'd like to evaluate. 
@@ -85,6 +87,7 @@ extract_variable_from_universe(M, 9, PSI_analysis) |>
 
 # visualize each analysis from fit in a histogram
 library(ggplot2)
+library(dplyr)
 
 #Next to filter, you can select which parts of the "universes" to plot. Here, I am excluding the covariates, which include age and race. 
   
