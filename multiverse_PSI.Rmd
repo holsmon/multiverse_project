@@ -75,7 +75,7 @@ PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
 
 ```{r}
 
-#exectue multiverse
+#execute multiverse
 execute_multiverse(M)
 
 summary = broom::tidy(PSI_analysis, conf.int = TRUE)
