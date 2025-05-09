@@ -82,7 +82,7 @@ execute_multiverse(M)
 summary = broom::tidy(PSI_analysis, conf.int = TRUE)
 
 #You cant test out a specific "universe". here, we can extract the 8th universe. Replace 8 with whichever university you'd like to evaluate. 
-extract_variable_from_universe(M, 9, PSI_analysis) |> 
+extract_variable_from_universe(M, 3, PSI_analysis) |> 
   broom::tidy()
 
 # visualize each analysis from fit in a histogram
@@ -98,7 +98,7 @@ library(dplyr)
   select( find_results ) |>
   gather( "analysis", "result" ) |>
   unnest(result) |>
-  filter( term != "(Intercept)")|>
+  filter( !(term %in% c("(Intercept)", "age", "Age_Squared", "raceAsian", "raceBlack or African American", "raceWhite"))) |>
   ggplot() +
   geom_histogram(aes(x = p.value), bins = 50, fill = "#ffffff", color = "#333333") +
   geom_vline( xintercept = 0.05, color = "red", linetype = "dashed") +
