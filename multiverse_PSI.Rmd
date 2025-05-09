@@ -39,7 +39,7 @@ mv$PSISymbSrchScldScr_Z <- scale(mv$PSISymbSrchScld, center = TRUE, scale = TRUE
 #Generate a curvilinear age variable for further analysis
 mv$Age_Squared <- mv$age^2
 
-#convert predictor variables (GCS, PTA, and GOAT) to z-scores
+#convert predictor variables (GCS, PTA, and GOAT) to z-scores plz
 mv$worst_GCS_Z <- scale(mv$worst_GCS, center = TRUE, scale = TRUE)
 
 mv$PTA_Reverse_Z <- scale(mv$PTA_reverse, center = TRUE, scale = TRUE)
