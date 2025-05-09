@@ -57,17 +57,17 @@ M <- multiverse()
 
 ```{multiverse default-m-1, inside = M}
 
-#setting up multiverse with covariates
-PSI_analysis <- glm(PSI ~ branch(formula,
-                   "GCS" ~ worst_GCS,
-                   "GCS_age" ~ worst_GCS + age,
-                   "GCS_age_race" ~ worst_GCS + age + race,
-                   "GOAT" ~ GOAT,
-                   "GOAT_age" ~ GOAT + age,
-                   "GOAT_age_race" ~ GOAT + age + race,
-                   "PTA" ~ PTA_reverse,
-                   "PTA_age" ~ PTA_reverse + age,
-                   "PTA_age_race" ~ PTA_reverse + age + race), data = multiverse_data)
+#setting up multiverse with various predictor variables
+PSI_analysis <- glm(PSI_Z ~ branch(formula,
+                   "GCS" ~ worst_GCS_Z,
+                   "GCS_age" ~ worst_GCS_Z + age + Age_Squared,
+                   "GCS_age_race" ~ worst_GCS_Z + age + Age_Squared + race,
+                   "GOAT" ~ GOAT_Z,
+                   "GOAT_age" ~ GOAT_Z + age +Age_Squared,
+                   "GOAT_age_race" ~ GOAT_Z + age +Age_Squared + race,
+                   "PTA" ~ PTA_Reverse_Z,
+                   "PTA_age" ~ PTA_Reverse_Z + age +Age_Squared,
+                   "PTA_age_race" ~ PTA_Reverse_Z + age + Age_Squared + race), data = mv)
 
 PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
 
@@ -76,19 +76,19 @@ PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
 ```{r}
 
 #execute multiverse
-execute_multiverse(M)
 
 summary = broom::tidy(PSI_analysis, conf.int = TRUE)
 
-extract_variable_from_universe(M, 8, PSI_analysis) |> 
+#You cant test out a specific "universe". here, we can extract the 8th universe. Replace 8 with whichever university you'd like to evaluate. 
+extract_variable_from_universe(M, 9, PSI_analysis) |> 
   broom::tidy()
 
 # visualize each analysis from fit in a histogram
-
 library(ggplot2)
+
+#Next to filter, you can select which parts of the "universes" to plot. Here, I am excluding the covariates, which include age and race. 
   
-  
-  expand(M) |>
+  multiverse::expand(M) |>
   mutate( 
     find_results = map(.results, "PSI_result")
   ) |>
