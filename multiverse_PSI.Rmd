@@ -61,12 +61,12 @@ PSI_analysis <- lm(PSI_Z ~ branch(formula,
                    "GOAT_race" ~ GOAT_Z + race,
                    "GOAT_age_race" ~ GOAT_Z + age + race,
                    "GOAT_race_income" ~ GOAT_Z + race + income_ord,
-                   "GOAT_worst" ~ GOAT_Z + age + Age_Squared + education + gender,
+                   "GOAT_worst" ~ GOAT_Z + age + Age_Squared + education + Gender,
                    "PTA" ~ PTA_Reverse_Z,
                    "PTA_age_ed_gend" ~ PTA_Reverse_Z + age + education + Gender,
                    "PTA_age_race_ed_gend" ~ PTA_Reverse_Z + age + race + education + Gender,
                    "PTA_agesq_ed_gend" ~ PTA_Reverse_Z + Age_Squared + education + Gender,
-                   "PTA_worst" ~ PTA_Reverse_Z + income,
+                   "PTA_worst" ~ PTA_Reverse_Z + income_ord,
                    "GCS" ~ worst_GCS_Z,
                    "GCS_age_race" ~ worst_GCS_Z + age + race,
                    "GCS_agesq_race" ~ worst_GCS_Z + Age_Squared + race,
@@ -85,7 +85,7 @@ PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
 execute_multiverse(M)
 
 #You can test out a specific "universe" here the various analyses contained within "PSI_analysis". Here, we can extract the nth universe. Replace n (number) with whichever university you'd like to evaluate. 
-extract_variable_from_universe(M, 3, PSI_analysis) |> 
+extract_variable_from_universe(M, 5, PSI_analysis) |> 
   broom::tidy()
 
 ```
@@ -107,7 +107,9 @@ library(dplyr)
   select( find_results ) |>
   gather( "analysis", "result" ) |>
   unnest(result) |>
-  filter( !(term %in% c("(Intercept)", "age", "Age_Squared", "raceAsian", "raceBlack or African American", "raceWhite"))) |>
+  filter(
+    str_detect(term, "GOAT_Z|PTA_Reverse_Z|worst_GCS_Z")
+  ) |>
   ggplot() +
   geom_histogram(aes(x = p.value), bins = 50, fill = "#ffffff", color = "#333333") +
   geom_vline( xintercept = 0.05, color = "red", linetype = "dashed") +
@@ -140,14 +142,17 @@ library(dplyr)
   select( find_results ) |>
   gather( "analysis", "result" ) |>
   unnest(result) |>
-  filter( !(term %in% c("(Intercept)", "age", "Age_Squared", "raceAsian", "raceBlack or African American", "raceWhite"))) |>
+  filter(
+    str_detect(term, "GOAT_Z|PTA_Reverse_Z|worst_GCS_Z")
+  ) |>
   ggplot() +
   geom_histogram(aes(x = estimate), bins = 50, fill = "#ffffff", color = "#333333") +
   facet_wrap(~ analysis, scales = "free", nrow = 3) +
   ggtitle("Multiverse results for PSI beta estimates") +
   theme_minimal() +
   theme(strip.text = element_blank()) +
-  labs(x = "Beta estimate")
+  labs(x = "Beta estimate") +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.05)))
 
   #save the histogram as a .jpg
   ggsave("PSI_beta_plot.jpg", 
