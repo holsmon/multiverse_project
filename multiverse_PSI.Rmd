@@ -30,21 +30,17 @@ mv <- read_excel("multiverse_159_subjects.xlsx")
 #Convert PSI composite index score to z score 
 mv$PSI_Z <- scale(mv$PSI, center = TRUE, scale = TRUE)
 
-#convert the PSI Digit Symbol Scaled score to z scores
-mv$PSIDigSymbScldScr_Z <- scale(mv$PSIDigSymbScld, center = TRUE, scale = TRUE)
-
-#convert the PSI Symbol Search Scaled score to z scores
-mv$PSISymbSrchScldScr_Z <- scale(mv$PSISymbSrchScld, center = TRUE, scale = TRUE)
-
-#Generate a curvilinear age variable
-mv$Age_Squared <- mv$age^2
-
 #convert predictor variables (GCS, PTA, and GOAT) to z-scores. Note PTA scores have already been revered in original data to for accurate comparison between PTA, GCS, and GOAT.
 mv$worst_GCS_Z <- scale(mv$worst_GCS, center = TRUE, scale = TRUE)
 
 mv$PTA_Reverse_Z <- scale(mv$PTA_reverse, center = TRUE, scale = TRUE)
 
 mv$GOAT_Z <- scale(mv$GOAT, center = TRUE, scale = TRUE)
+
+#Generate a curvilinear age variable
+mv$Age_Squared <- mv$age^2
+
+#Note that race, income_ord and education variables have already been converted to ordinal.
 
 ```
 
@@ -57,17 +53,26 @@ M <- multiverse()
 
 ```{multiverse default-m-1, inside = M}
 
+#add income_ord(ordinal), education (ordinal), gender
+
 #setting up multiverse with various predictor variables using branch function for different lm models
 PSI_analysis <- lm(PSI_Z ~ branch(formula,
-                   "GCS" ~ worst_GCS_Z,
-                   "GCS_age" ~ worst_GCS_Z + age + Age_Squared,
-                   "GCS_age_race" ~ worst_GCS_Z + age + Age_Squared + race,
                    "GOAT" ~ GOAT_Z,
-                   "GOAT_age" ~ GOAT_Z + age +Age_Squared,
-                   "GOAT_age_race" ~ GOAT_Z + age +Age_Squared + race,
+                   "GOAT_race" ~ GOAT_Z + race,
+                   "GOAT_age_race" ~ GOAT_Z + age + race,
+                   "GOAT_race_income" ~ GOAT_Z + race + income_ord,
+                   "GOAT_worst" ~ GOAT_Z + age + Age_Squared + education + gender,
                    "PTA" ~ PTA_Reverse_Z,
-                   "PTA_age" ~ PTA_Reverse_Z + age +Age_Squared,
-                   "PTA_age_race" ~ PTA_Reverse_Z + age + Age_Squared + race), data = mv)
+                   "PTA_age_ed_gend" ~ PTA_Reverse_Z + age + education + Gender,
+                   "PTA_age_race_ed_gend" ~ PTA_Reverse_Z + age + race + education + Gender,
+                   "PTA_agesq_ed_gend" ~ PTA_Reverse_Z + Age_Squared + education + Gender,
+                   "PTA_worst" ~ PTA_Reverse_Z + income,
+                   "GCS" ~ worst_GCS_Z,
+                   "GCS_age_race" ~ worst_GCS_Z + age + race,
+                   "GCS_agesq_race" ~ worst_GCS_Z + Age_Squared + race,
+                   "GCS_age_agesq_race" ~ worst_GCS_Z + age + Age_Squared + race,
+                   "GCS_worst" ~ worst_GCS_Z + income_ord + education + Gender),
+                   data = mv)
 
 #converts the output of statistical models into a tidy data frame format for later plotting and visualization
 PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
@@ -113,7 +118,8 @@ library(dplyr)
   ) +
   ggtitle("Multiverse results for PSI p-values") +
   theme_minimal() +
-  theme(strip.text = element_blank())
+  theme(strip.text = element_blank()) +
+  labs(x = "p-values")
 
   #save the histogram as a .jpg
   ggsave("PSI_pvalue_plot.jpg", 
@@ -138,9 +144,10 @@ library(dplyr)
   ggplot() +
   geom_histogram(aes(x = estimate), bins = 50, fill = "#ffffff", color = "#333333") +
   facet_wrap(~ analysis, scales = "free", nrow = 3) +
-  ggtitle("Multiverse results for PSI beta values") +
+  ggtitle("Multiverse results for PSI beta estimates") +
   theme_minimal() +
-  theme(strip.text = element_blank())
+  theme(strip.text = element_blank()) +
+  labs(x = "Beta estimate")
 
   #save the histogram as a .jpg
   ggsave("PSI_beta_plot.jpg", 
