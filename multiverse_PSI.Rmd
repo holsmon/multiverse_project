@@ -83,9 +83,15 @@ execute_multiverse(M)
 extract_variable_from_universe(M, 3, PSI_analysis) |> 
   broom::tidy()
 
+```
+
+```{r}
+
 # visualize each analysis from fit in a histogram. First, load necessary libraries:
 library(ggplot2)
 library(dplyr)
+
+#Here, we are visualizing the distribution of p-values.
 
 #To filter, you can select which parts of the "universes" to plot. Here, I am excluding the covariates, which include age and race variables. 
   
@@ -105,7 +111,39 @@ library(dplyr)
     breaks = function(x) seq(0, ceiling(max(x)), by = 1),
     limits = c(0, NA)  # Ensures y-axis starts at 0, upper limit auto-calculated
   ) +
-  ggtitle("Multiverse results") +
-  theme_minimal()
+  ggtitle("Multiverse results for PSI p-values") +
+  theme_minimal() +
+  theme(strip.text = element_blank())
+
+  #save the histogram as a .jpg
+  ggsave("PSI_pvalue_plot.jpg", 
+       width = 8, height = 6, units = "in", dpi = 300)
+
+```
+
+```{r}
+
+#Here, we are visualizing the distribution of beta estimates, rather than p-values. 
+
+#To filter, you can select which parts of the "universes" to plot. Here, I am excluding the covariates, which include age and race variables. 
+  
+  multiverse::expand(M) |>
+  mutate( 
+    find_results = map(.results, "PSI_result")
+  ) |>
+  select( find_results ) |>
+  gather( "analysis", "result" ) |>
+  unnest(result) |>
+  filter( !(term %in% c("(Intercept)", "age", "Age_Squared", "raceAsian", "raceBlack or African American", "raceWhite"))) |>
+  ggplot() +
+  geom_histogram(aes(x = estimate), bins = 50, fill = "#ffffff", color = "#333333") +
+  facet_wrap(~ analysis, scales = "free", nrow = 3) +
+  ggtitle("Multiverse results for PSI beta values") +
+  theme_minimal() +
+  theme(strip.text = element_blank())
+
+  #save the histogram as a .jpg
+  ggsave("PSI_beta_plot.jpg", 
+       width = 8, height = 6, units = "in", dpi = 300)
 
 ```
