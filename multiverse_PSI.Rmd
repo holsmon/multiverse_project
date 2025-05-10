@@ -36,10 +36,10 @@ mv$PSIDigSymbScldScr_Z <- scale(mv$PSIDigSymbScld, center = TRUE, scale = TRUE)
 #convert the PSI Symbol Search Scaled score to z scores
 mv$PSISymbSrchScldScr_Z <- scale(mv$PSISymbSrchScld, center = TRUE, scale = TRUE)
 
-#Generate a curvilinear age variable for further analysis
+#Generate a curvilinear age variable
 mv$Age_Squared <- mv$age^2
 
-#convert predictor variables (GCS, PTA, and GOAT) to z-scores plz
+#convert predictor variables (GCS, PTA, and GOAT) to z-scores. Note PTA scores have already been revered in original data to for accurate comparison between PTA, GCS, and GOAT.
 mv$worst_GCS_Z <- scale(mv$worst_GCS, center = TRUE, scale = TRUE)
 
 mv$PTA_Reverse_Z <- scale(mv$PTA_reverse, center = TRUE, scale = TRUE)
@@ -57,8 +57,8 @@ M <- multiverse()
 
 ```{multiverse default-m-1, inside = M}
 
-#setting up multiverse with various predictor variables
-PSI_analysis <- glm(PSI_Z ~ branch(formula,
+#setting up multiverse with various predictor variables using branch function for different lm models
+PSI_analysis <- lm(PSI_Z ~ branch(formula,
                    "GCS" ~ worst_GCS_Z,
                    "GCS_age" ~ worst_GCS_Z + age + Age_Squared,
                    "GCS_age_race" ~ worst_GCS_Z + age + Age_Squared + race,
@@ -69,27 +69,25 @@ PSI_analysis <- glm(PSI_Z ~ branch(formula,
                    "PTA_age" ~ PTA_Reverse_Z + age +Age_Squared,
                    "PTA_age_race" ~ PTA_Reverse_Z + age + Age_Squared + race), data = mv)
 
+#converts the output of statistical models into a tidy data frame format for later plotting and visualization
 PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
 
 ```
 
 ```{r}
 
-#execute multiverse
-
+#execute the multiverse analysis
 execute_multiverse(M)
 
-summary = broom::tidy(PSI_analysis, conf.int = TRUE)
-
-#You cant test out a specific "universe". here, we can extract the 8th universe. Replace 8 with whichever university you'd like to evaluate. 
+#You can test out a specific "universe" here the various analyses contained within "PSI_analysis". Here, we can extract the nth universe. Replace n (number) with whichever university you'd like to evaluate. 
 extract_variable_from_universe(M, 3, PSI_analysis) |> 
   broom::tidy()
 
-# visualize each analysis from fit in a histogram
+# visualize each analysis from fit in a histogram. First, load necessary libraries:
 library(ggplot2)
 library(dplyr)
 
-#Next to filter, you can select which parts of the "universes" to plot. Here, I am excluding the covariates, which include age and race. 
+#To filter, you can select which parts of the "universes" to plot. Here, I am excluding the covariates, which include age and race variables. 
   
   multiverse::expand(M) |>
   mutate( 
