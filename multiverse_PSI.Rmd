@@ -215,39 +215,3 @@ animate(
 )
 
 ```
-
-```{r}
-
-#testing another version
-frame_renderer <- file_renderer(
-  dir = "PSI",
-  prefix = "frame",
-  overwrite = TRUE
-)
-animate(
-  beta_animated_visual,
-  nframes = 21,
-  fps = 4,
-  renderer = frame_renderer,
-  device = "png"
-)
-
-library(magick)
-
-# Create list of composite frames
-composite_frames <- lapply(1:7, function(i) {
-  img1 <- image_read(sprintf("PSI/frame%04d.png", i))       # 0001–0007
-  img2 <- image_read(sprintf("PSI/frame%04d.png", i + 7))   # 0008–0014
-  img3 <- image_read(sprintf("PSI/frame%04d.png", i + 14))  # 0015–0021
-
-  # Stack vertically (or use stack = FALSE for horizontal layout)
-  image_append(c(img1, img2, img3), stack = TRUE)
-})
-
-# Animate at 2 frames per second (0.5 seconds per frame)
-animation <- image_animate(image_join(composite_frames), fps = 2)
-
-# Save as GIF
-image_write(animation, "composite_beta_animation.gif")
-
-```
