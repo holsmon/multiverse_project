@@ -1,7 +1,7 @@
 ---
 title: "Multiverse_markdown"
 output: html_document
-date: "2025-05-7"
+date: "2025-05-11"
 ---
 
 ```{r setup, include=FALSE}
@@ -27,9 +27,6 @@ mv <- read_excel("multiverse_159_subjects.xlsx")
 
 #setup the variables
 
-#Convert PSI composite index score to z score 
-mv$PSI_Z <- scale(mv$PSI, center = TRUE, scale = TRUE)
-
 #convert predictor variables (GCS, PTA, and GOAT) to z-scores. Note PTA scores have already been revered in original data to for accurate comparison between PTA, GCS, and GOAT.
 mv$worst_GCS_Z <- scale(mv$worst_GCS, center = TRUE, scale = TRUE)
 
@@ -37,10 +34,13 @@ mv$PTA_Reverse_Z <- scale(mv$PTA_reverse, center = TRUE, scale = TRUE)
 
 mv$GOAT_Z <- scale(mv$GOAT, center = TRUE, scale = TRUE)
 
+#Convert GSI mood_composite to z
+mv$mood_z <- scale(mv$BSI18GSIScoreT, center = TRUE, scale = TRUE)
+
 #Generate a curvilinear age variable
 mv$Age_Squared <- mv$age^2
 
-#Note that race, income_ord and education variables have already been converted to ordinal.
+#Note that race, income_ord and education variables have already been converted to ordinal values. 
 
 ```
 
@@ -54,32 +54,32 @@ M <- multiverse()
 ```{multiverse default-m-1, inside = M}
 
 #setting up multiverse with various predictor variables using branch function for different lm models
-PSI_analysis <- lm(PSI_Z ~ branch(formula,
+mood_analysis <- lm(mood_z ~ branch(formula,
                    "GOAT" ~ GOAT_Z,
-                   "GOAT_b1" ~ GOAT_Z + race,
-                   "GOAT_b2" ~ GOAT_Z + age + race,
-                   "GOAT_b3" ~ GOAT_Z + race + income_ord,
-                   "GOAT_w1" ~ GOAT_Z + age + Age_Squared + education + Gender,
-                   "GOAT_w2" ~ GOAT_Z + age + education + Gender,
-                   "GOAT_w3" ~ GOAT_Z + Age_Squared + education + Gender,
+                   "GOAT_b1" ~ GOAT_Z + age + Age_Squared+ income_ord,
+                   "GOAT_b2" ~ GOAT_Z + age + Age_Squared+ income_ord + Gender,
+                   "GOAT_b3" ~ GOAT_Z + income_ord,
+                   "GOAT_w1" ~ GOAT_Z + Age_Squared + race+ income_ord+ education + Gender,
+                   "GOAT_w2" ~ GOAT_Z + age + race+ income_ord+ education + Gender,
+                   "GOAT_w3" ~ GOAT_Z + age + race+ education + Gender,
                    "PTA" ~ PTA_Reverse_Z,
-                   "PTA_b1" ~ PTA_Reverse_Z + age + education + Gender,
-                   "PTA_b2" ~ PTA_Reverse_Z + age + race + education + Gender,
-                   "PTA_b3" ~ PTA_Reverse_Z + Age_Squared + education + Gender,
-                   "PTA_w1" ~ PTA_Reverse_Z + race +income_ord,
-                   "PTA_w2" ~ PTA_Reverse_Z + age + Age_Squared + income_ord,
-                   "PTA_w3" ~ PTA_Reverse_Z + age + Age_Squared + income_ord,
+                   "PTA_b1" ~ PTA_Reverse_Z + race,
+                   "PTA_b2" ~ PTA_Reverse_Z + race+ education,
+                   "PTA_b3" ~ PTA_Reverse_Z + education,
+                   "PTA_w1" ~ PTA_Reverse_Z + age+ Age_Squared+income_ord+education+Gender,
+                   "PTA_w2" ~ PTA_Reverse_Z + age+ Age_Squared+income_ord+education,
+                   "PTA_w3" ~ PTA_Reverse_Z + age+ Age_Squared+income_ord+Gender,
                    "GCS" ~ worst_GCS_Z,
-                   "GCS_b1" ~ worst_GCS_Z + age + race,
-                   "GCS_b2" ~ worst_GCS_Z + Age_Squared + race,
-                   "GCS_b3" ~ worst_GCS_Z + age + Age_Squared + race,
-                   "GCS_w1" ~ worst_GCS_Z + income_ord + education + Gender,
-                   "GCS_w2" ~ worst_GCS_Z + education + Gender,
-                   "GCS_w3" ~ worst_GCS_Z + income_ord + Gender),
+                   "GCS_b1" ~ worst_GCS_Z + Age_Squared + income_ord,
+                   "GCS_b2" ~ worst_GCS_Z + age + Age_Squared + income_ord,
+                   "GCS_b3" ~ worst_GCS_Z + Age_Squared + income_ord +Gender,
+                   "GCS_w1" ~ worst_GCS_Z + race + education + Gender,
+                   "GCS_w2" ~ worst_GCS_Z + race + Gender,
+                   "GCS_w3" ~ worst_GCS_Z + race + education),
                    data = mv)
 
 #converts the output of statistical models into a tidy data frame format for later plotting and visualization
-PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
+mood_result <- mood_analysis |> broom::tidy(conf.int = TRUE)
 
 ```
 
@@ -89,7 +89,7 @@ PSI_result <- PSI_analysis |> broom::tidy(conf.int = TRUE)
 execute_multiverse(M)
 
 #You can test out a specific "universe" here the various analyses contained within "PSI_analysis". Here, we can extract the nth universe. Replace n (number) with whichever university you'd like to evaluate. 
-extract_variable_from_universe(M, 5, PSI_analysis) |> 
+extract_variable_from_universe(M, 5, mood_analysis) |> 
   broom::tidy()
 
 ```
@@ -106,7 +106,7 @@ library(dplyr)
   
   multiverse::expand(M) |>
   mutate( 
-    find_results = map(.results, "PSI_result")
+    find_results = map(.results, "mood_result")
   ) |>
   select( find_results ) |>
   gather( "analysis", "result" ) |>
@@ -122,13 +122,13 @@ library(dplyr)
     breaks = function(x) seq(0, ceiling(max(x)), by = 1),
     limits = c(0, NA)  # Ensures y-axis starts at 0, upper limit auto-calculated
   ) +
-  ggtitle("Multiverse results for PSI p-values") +
+  ggtitle("Multiverse results for mood outcome p-values") +
   theme_minimal() +
   theme(strip.text = element_blank()) +
   labs(x = "p-values")
 
   #save the histogram as a .jpg
-  ggsave("PSI_pvalue_plot.jpg", 
+  ggsave("mood_pvalue_plot.jpg", 
        width = 8, height = 6, units = "in", dpi = 300)
 
 ```
@@ -141,7 +141,7 @@ library(dplyr)
   
   multiverse::expand(M) |>
   mutate( 
-    find_results = map(.results, "PSI_result")
+    find_results = map(.results, "mood_result")
   ) |>
   select( find_results ) |>
   gather( "analysis", "result" ) |>
@@ -152,14 +152,14 @@ library(dplyr)
   ggplot() +
   geom_histogram(aes(x = estimate), bins = 50, fill = "#ffffff", color = "#333333") +
   facet_wrap(~ analysis, scales = "free", nrow = 3) +
-  ggtitle("Multiverse results for PSI beta estimates") +
+  ggtitle("Multiverse results for mood outcome beta estimates") +
   theme_minimal() +
   theme(strip.text = element_blank()) +
   labs(x = "Beta estimate") +
   scale_x_continuous(expand = expansion(mult = c(0, 0.05)))
 
   #save the histogram as a .jpg
-  ggsave("PSI_beta_plot.jpg", 
+  ggsave("mood_beta_plot.jpg", 
        width = 8, height = 6, units = "in", dpi = 300)
 
 ```
@@ -174,7 +174,7 @@ library(gganimate)
 #Prepare data
 beta_animated_visual <- multiverse::expand(M) |>
   mutate(
-    find_results = map(.results, "PSI_result")
+    find_results = map(.results, "mood_result")
   ) |>
   unnest(cols = c(find_results)) |>
   filter(str_detect(term, "GOAT_Z|PTA_Reverse_Z|worst_GCS_Z")) |>
@@ -183,7 +183,7 @@ beta_animated_visual <- multiverse::expand(M) |>
   ggplot() +
   geom_vline(xintercept = 0, colour = '#979797') +
   geom_point(aes(x = estimate, y = term)) +
-  ggtitle("Multiverse results for PSI beta estimates") +
+  ggtitle("Multiverse results for mood outcome beta estimates") +
   geom_errorbarh(aes(xmin = conf.low, xmax = conf.high, y = term), height = 0) +
   theme_minimal() +
   theme(axis.title.y = element_blank()) +  # Remove y-axis title
@@ -209,7 +209,7 @@ animate(
   beta_animated_visual,
   nframes = num_frames,
   fps = 4,
-  renderer = gifski_renderer("PSI_beta_animation.gif")
+  renderer = gifski_renderer("mood_beta_animation.gif")
 )
 
 ```
