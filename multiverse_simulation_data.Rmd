@@ -1,0 +1,303 @@
+---
+title: "Multiverse_markdown"
+output: html_document
+date: "2025-05-11"
+---
+Specr is the main package used here. Citation post
+```{r}
+citation("specr")
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+#load necessary packages
+library(stringr)
+library(lavaan)
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lme4)
+library(ggplot2)
+library(specr)
+library(writexl)
+
+#load in dataframe
+mv <- read_excel("multiverse_159_subjects.xlsx")
+
+```
+
+
+```{r}
+
+#setup the main predictor variables
+
+#convert predictor variables (GCS, PTA, and GOAT) to z-scores. Note PTA scores have already been revered in original data to for accurate comparison between PTA, GCS, and GOAT.
+mv$worst_GCS_Z <- scale(mv$worst_GCS, center = TRUE, scale = TRUE)
+
+mv$PTA_Reverse_Z <- scale(mv$PTA_reverse, center = TRUE, scale = TRUE)
+
+mv$GOAT_Z <- scale(mv$GOAT, center = TRUE, scale = TRUE)
+
+```
+
+```{r}
+
+#setup the main outcome variables for mood
+
+#BSI depression to z score
+mv$Dep_Z <- scale(mv$BSI18DeprScoreT, center = TRUE, scale = TRUE)
+
+#BSI Anxiety to z score
+mv$Anx_Z <- scale(mv$BSI18AnxScoreT, center = TRUE, scale = TRUE)
+
+#Convert GSI mood_composite to z
+mv$GSI_Z <- scale(mv$BSI18GSIScoreT, center = TRUE, scale = TRUE)
+
+#Note that other control variables, race, income_ord and education variables have already been converted to ordinal values. 
+```
+
+```{r}
+
+#simulating dataset for mood
+
+# Step 1: Separate numeric and categorical variables
+numeric_vars <- c("Dep_Z", "Anx_Z", "GSI_Z", "worst_GCS_Z", 
+                  "PTA_Reverse_Z", "GOAT_Z", "age", "education", "income_ord")
+
+categorical_vars <- c("Gender", "race")
+
+# Step 2: Compute mean and covariance matrix for numeric vars
+mu <- colMeans(mv[, numeric_vars], na.rm = TRUE)
+Sigma <- cov(mv[, numeric_vars], use = "pairwise.complete.obs")
+
+# Step 3: Simulate numeric data
+n_sim <- 300
+sim_numeric <- as.data.frame(mvrnorm(n = n_sim, mu = mu, Sigma = Sigma))
+colnames(sim_numeric) <- numeric_vars
+
+# Step 4: Simulate categorical data using sampling
+set.seed(123)  # For reproducibility
+sim_gender <- sample(mv$Gender, size = n_sim, replace = TRUE)
+sim_race <- sample(mv$race, size = n_sim, replace = TRUE)
+
+# Step 5: Combine numeric and categorical data
+sim_data <- cbind(sim_numeric, Gender = sim_gender, race = sim_race)
+
+#Generate a curvilinear age variable based on simulated data
+sim_data$age_squared <- sim_data$age^2
+
+#save sim_data as excel file
+write_xlsx(sim_data, "simulated_mood_data.xlsx")
+
+```
+
+```{r}
+#Generate the specification curve for the BSI Depression, Anxiety and General Symptom Index scores based on simulation data
+
+#Generate the specification curve for the mood related outcome variables
+mood_outcome_specs <- specr::setup(data = sim_data,            
+               y = c("GSI_Z", "Dep_Z", "Anx_Z"),              
+               x = c("worst_GCS_Z", "PTA_Reverse_Z", "GOAT_Z"),             
+               model = c("lm"),
+controls = c("age", "age_squared", "race", "income_ord", "education", "Gender"))
+
+mood_outcome_results_sim <- specr(mood_outcome_specs)
+#Save the results as a df
+mood_outcome_results_df_sim <- as.data.frame(mood_outcome_results_sim)
+#Generate a plot
+plot(mood_outcome_results_sim, 
+      choices = c("y", "x"))
+#Save the plot
+ggsave("mood_outcome_results_simulation_curve_y_x.jpg")
+#Generate a boxplot
+plot(mood_outcome_results_sim, 
+      choices = c("y", "x"), 
+      type = "boxplot")
+#Save the boxplot
+ggsave("mood_outcome_results_simulation_boxplot_y_x.jpg")
+#Generate a summary of the results
+mood_outcome_results_summary_sim <- summary(mood_outcome_results_sim, 
+        type = "curve", 
+        group = c("y", "x"))
+#Save the summary results and full results as a dataframe. Download as excel
+mood_outcome_results_df_sim <- as.data.frame(mood_outcome_results_sim)
+write_xlsx(mood_outcome_results_df_sim, "mood_outcome_results_simulation_df.xlsx")
+```
+
+```{r}
+
+#setup the main outcome variables for life satisfaction
+
+#Reverse and scale the DRS scores so that higher scores reflect less disability, rather than more disability. Puts into same perspective as SWLS. 
+mv$DRS_reverse <- 30 - mv$DRS_total
+
+#convert SWLS to z
+mv$SWLS_Z <- scale(mv$SWLS_total, center = TRUE, scale = TRUE)
+
+#convert DRS Reversed and scale
+mv$DRS_reverse_Z <- scale(mv$DRS_reverse, center = TRUE, scale = TRUE)
+
+#Generate a composite variable with the satisfaction with life scale
+mv$life_Composite <- (mv$SWLS_total + mv$DRS_reverse) / 2
+#Convert life composite to z
+mv$life_Z <- scale(mv$life_Composite, center = TRUE, scale = TRUE)
+
+#Note that other control variables, race, income_ord and education variables have already been converted to ordinal values. 
+```
+
+```{r}
+
+#simulating dataset for life satisfaction
+
+# Step 1: Separate numeric and categorical variables
+numeric_vars <- c("life_Z", "SWLS_Z", "DRS_reverse_Z", 
+                  "PTA_Reverse_Z", "GOAT_Z", "worst_GCS_Z", "age", "education", "income_ord")
+
+categorical_vars <- c("Gender", "race")
+
+# Step 2: Compute mean and covariance matrix for numeric vars
+mu <- colMeans(mv[, numeric_vars], na.rm = TRUE)
+Sigma <- cov(mv[, numeric_vars], use = "pairwise.complete.obs")
+
+# Step 3: Simulate numeric data
+n_sim <- 300
+sim_numeric <- as.data.frame(mvrnorm(n = n_sim, mu = mu, Sigma = Sigma))
+colnames(sim_numeric) <- numeric_vars
+
+# Step 4: Simulate categorical data using sampling
+set.seed(123)  # For reproducibility
+sim_gender <- sample(mv$Gender, size = n_sim, replace = TRUE)
+sim_race <- sample(mv$race, size = n_sim, replace = TRUE)
+
+# Step 5: Combine numeric and categorical data
+sim_data <- cbind(sim_numeric, Gender = sim_gender, race = sim_race)
+
+#Generate a curvilinear age variable based on simulated data
+sim_data$age_squared <- sim_data$age^2
+
+#save sim_data as excel file
+write_xlsx(sim_data, "simulated_life_data.xlsx")
+
+```
+
+```{r}
+#Generate the specification curve for life satisfaction scores based on simulation data
+
+#Generate the specification curve for the life related outcome variables
+life_outcome_specs <- specr::setup(data = sim_data,            
+               y = c("life_Z", "SWLS_Z", "DRS_reverse_Z"),              
+               x = c("worst_GCS_Z", "PTA_Reverse_Z", "GOAT_Z"),             
+               model = c("lm"),
+controls = c("age", "age_squared", "race", "income_ord", "education", "Gender"))
+
+life_outcome_results_sim <- specr(life_outcome_specs)
+#Save the results as a df
+life_outcome_results_df_sim <- as.data.frame(life_outcome_results_sim)
+#Generate a plot
+plot(life_outcome_results_sim, 
+      choices = c("y", "x"))
+#Save the plot
+ggsave("life_outcome_results_simulation_curve_y_x.jpg")
+#Generate a boxplot
+plot(life_outcome_results_sim, 
+      choices = c("y", "x"), 
+      type = "boxplot")
+#Save the boxplot
+ggsave("life_outcome_results_simulation_boxplot_y_x.jpg")
+#Generate a summary of the results
+life_outcome_results_summary_sim <- summary(life_outcome_results_sim, 
+        type = "curve", 
+        group = c("y", "x"))
+#Save the summary results and full results as a dataframe. Download as excel
+life_outcome_results_df_sim <- as.data.frame(life_outcome_results_sim)
+write_xlsx(life_outcome_results_df_sim, "life_outcome_results_simulation_df.xlsx")
+```
+
+```{r}
+
+#setup the main outcome variables for PSI
+
+#Convert PSI composite index score to z score 
+mv$PSI_Z <- scale(mv$PSI, center = TRUE, scale = TRUE)
+
+#convert PSI Digit Symbl Score to z 
+mv$PSIDigSymb_Z <- scale(mv$PSIDigSymbScld, center = TRUE, scale = TRUE)
+
+#convert to z scores
+mv$PSISymbSrch_Z <- scale(mv$PSISymbSrchScld, center = TRUE, scale = TRUE)
+
+
+#Note that other control variables, race, income_ord and education variables have already been converted to ordinal values. 
+```
+
+```{r}
+
+#simulating dataset for PSI
+
+# Step 1: Separate numeric and categorical variables
+numeric_vars <- c("PSI_Z", "PSIDigSymb_Z", "PSISymbSrch_Z", 
+                  "PTA_Reverse_Z", "GOAT_Z", "worst_GCS_Z", "age", "education", "income_ord")
+
+categorical_vars <- c("Gender", "race")
+
+# Step 2: Compute mean and covariance matrix for numeric vars
+mu <- colMeans(mv[, numeric_vars], na.rm = TRUE)
+Sigma <- cov(mv[, numeric_vars], use = "pairwise.complete.obs")
+
+# Step 3: Simulate numeric data
+n_sim <- 300
+sim_numeric <- as.data.frame(mvrnorm(n = n_sim, mu = mu, Sigma = Sigma))
+colnames(sim_numeric) <- numeric_vars
+
+# Step 4: Simulate categorical data using sampling
+set.seed(123)  # For reproducibility
+sim_gender <- sample(mv$Gender, size = n_sim, replace = TRUE)
+sim_race <- sample(mv$race, size = n_sim, replace = TRUE)
+
+# Step 5: Combine numeric and categorical data
+sim_data <- cbind(sim_numeric, Gender = sim_gender, race = sim_race)
+
+#Generate a curvilinear age variable based on simulated data
+sim_data$age_squared <- sim_data$age^2
+
+#save sim_data as excel file
+write_xlsx(sim_data, "simulated_PSI_data.xlsx")
+
+```
+
+```{r}
+#Generate the specification curve for PSI based on simulation data
+
+#Generate the specification curve for the PSI outcome variables
+PSI_outcome_specs <- specr::setup(data = sim_data,            
+               y = c("PSI_Z", "PSIDigSymb_Z", "PSISymbSrch_Z"),              
+               x = c("worst_GCS_Z", "PTA_Reverse_Z", "GOAT_Z"),             
+               model = c("lm"),
+controls = c("age", "age_squared", "race", "income_ord", "education", "Gender"))
+
+PSI_outcome_results_sim <- specr(PSI_outcome_specs)
+#Save the results as a df
+PSI_outcome_results_df_sim <- as.data.frame(PSI_outcome_results_sim)
+#Generate a plot
+plot(PSI_outcome_results_sim, 
+      choices = c("y", "x"))
+#Save the plot
+ggsave("PSI_outcome_results_simulation_curve_y_x.jpg")
+#Generate a boxplot
+plot(PSI_outcome_results_sim, 
+      choices = c("y", "x"), 
+      type = "boxplot")
+#Save the boxplot
+ggsave("PSI_outcome_results_simulation_boxplot_y_x.jpg")
+#Generate a summary of the results
+PSI_outcome_results_summary_sim <- summary(PSI_outcome_results_sim, 
+        type = "curve", 
+        group = c("y", "x"))
+#Save the summary results and full results as a dataframe. Download as excel
+PSI_outcome_results_df_sim <- as.data.frame(PSI_outcome_results_sim)
+write_xlsx(PSI_outcome_results_df_sim, "PSI_outcome_results_simulation_df.xlsx")
+```
