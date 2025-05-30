@@ -37,11 +37,12 @@ mv$GOAT_Z <- scale(mv$GOAT, center = TRUE, scale = TRUE)
 #Reverse and scale the DRS scores so that higher scores reflect less disability, rather than more disability. Puts into same perspective as SWLS. 
 mv$DRS_Scaled <- 30 - mv$DRS_total
 
-#Generate a composite variable with the satisfaction with life scale
-mv$life_Composite <- (mv$SWLS_total + mv$DRS_Scaled) / 2
+#Convert DRS and SWLS to z scores
+mv$SWLS_TotalScore_Z <- scale(mv$SWLS_total, center = TRUE, scale = TRUE)
+mv$DRS_Scaled_Z <- scale(mv$DRS_Scaled, center = TRUE, scale = TRUE)
 
-#Convert all mood_composite to z
-mv$life_z <- scale(mv$life_Composite, center = TRUE, scale = TRUE)
+#Generate a composite variable with the satisfaction with life scale (z scored already)
+mv$life_Composite_Z <- (mv$SWLS_TotalScore_Z + mv$DRS_Scaled_Z) / 2
 
 #Generate a curvilinear age variable
 mv$Age_Squared <- mv$age^2
