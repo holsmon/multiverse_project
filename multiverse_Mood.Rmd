@@ -114,10 +114,14 @@ library(dplyr)
   filter(
     str_detect(term, "GOAT_Z|PTA_Reverse_Z|worst_GCS_Z")
   ) |>
-  ggplot() +
-  geom_histogram(aes(x = p.value), bins = 50, fill = "#ffffff", color = "#333333") +
+  mutate(
+    significance = ifelse(p.value < 0.05, "Significant", "Not Significant")
+  ) |>
+  ggplot(aes(x = p.value, fill = significance)) +
+  geom_histogram(bins = 50, color = "#333333") +
   geom_vline( xintercept = 0.05, color = "red", linetype = "dashed") +
   facet_wrap(~ analysis, scales = "free", nrow = 3) +
+  scale_fill_manual(values = c("Significant" = "green", "Not Significant" = "grey")) +
   scale_y_continuous(
     breaks = function(x) seq(0, ceiling(max(x)), by = 1),
     limits = c(0, NA)  # Ensures y-axis starts at 0, upper limit auto-calculated
@@ -125,7 +129,7 @@ library(dplyr)
   ggtitle("Multiverse results for mood outcome p-values") +
   theme_minimal() +
   theme(strip.text = element_blank()) +
-  labs(x = "p-values")
+  labs(x = "p-values", fill = "Significance")
 
   #save the histogram as a .jpg
   ggsave("mood_pvalue_plot.jpg", 
