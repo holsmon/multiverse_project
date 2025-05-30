@@ -61,7 +61,7 @@ M <- multiverse()
 ```{multiverse default-m-1, inside = M}
 
 #setting up multiverse with various predictor variables using branch function for different lm models
-life_analysis <- lm(life_z ~ branch(formula,
+life_analysis <- lm(life_Composite_Z ~ branch(formula,
                    "GOAT" ~ GOAT_Z,
                    "GOAT_b1" ~ GOAT_Z + age + Age_Squared+ race + Gender,
                    "GOAT_b2" ~ GOAT_Z + age + Age_Squared+ race,
@@ -96,7 +96,7 @@ life_result <- life_analysis |> broom::tidy(conf.int = TRUE)
 execute_multiverse(M)
 
 #You can test out a specific "universe" here the various analyses contained within "PSI_analysis". Here, we can extract the nth universe. Replace n (number) with whichever university you'd like to evaluate. 
-extract_variable_from_universe(M, 9, life_analysis) |> 
+extract_variable_from_universe(M, 1, life_analysis) |> 
   broom::tidy()
 
 ```
